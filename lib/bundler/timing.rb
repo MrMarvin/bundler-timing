@@ -19,11 +19,16 @@ module Bundler
         Bundler.ui.info "#{'-'*longest_gem_name}-|-------|-#{'-' * longest_source}-|------------|--------------"
         Bundler::Timing.timings.to_a.sort_by { |name, gem| gem.installation_time }.each do |name, gem|
 
-          puts "#{name.ljust(longest_gem_name)} | #{gem.with_native_extentions?.to_s.ljust(5)} | #{gem.fetch_source.to_s.ljust(longest_source)} | #{gem.fetch_time.to_s.rjust(10)} | #{gem.installation_time.to_s.rjust(12)}"
+          puts "#{name.ljust(longest_gem_name)} | #{gem.with_native_extentions?.to_s.ljust(5)} | #{gem.fetch_source.ljust(longest_source)} | #{gem.fetch_time.to_s.rjust(10)} | #{gem.installation_time.to_s.rjust(12)}"
         end
         Bundler.ui.info "#{'-'*longest_gem_name}-|-------|-#{'-' * longest_source}-|------------|--------------"
 
         Bundler.ui.info "#{Bundler::Timing::L}: Installed #{Bundler::Timing::dependencies.count} gems in #{Bundler::Timing.timer.runtime} ms."
+      end
+
+      def [](gem_full_name)
+        @timings ||= {}
+        @timings[gem_full_name] ||= Bundler::Timing::GemTiming.new(nil)
       end
     end
 
@@ -49,7 +54,7 @@ module Bundler
 
     class GemTiming
 
-      attr_accessor :install_timer, :fetch_timer, :fetch_source
+      attr_accessor :spec, :install_timer, :fetch_timer, :fetch_source
 
       def initialize(spec)
         @spec = spec
@@ -81,11 +86,11 @@ module Bundler
       end
 
       def with_native_extentions?
-        @spec.extensions.any?
+        @spec&.extensions&.any? || false
       end
 
       def fetch_source
-        @fetch_source || "installed"
+        @fetch_source&.to_s || "installed ✔️"
       end
     end
   end
@@ -102,11 +107,12 @@ Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_BEFORE_INSTALL_ALL) do |de
 end
 
 Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_BEFORE_INSTALL) do |dependency|
-  (Bundler::Timing.timings ||= {})[dependency.full_name] = Bundler::Timing::GemTiming.new(dependency.spec).start_install_timer!
+  Bundler::Timing[dependency.spec.full_name].spec = dependency.spec
+  Bundler::Timing[dependency.spec.full_name].start_install_timer!
 end
 
 Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_AFTER_INSTALL) do |dependency|
-  Bundler::Timing.timings[dependency.full_name].install_timer.stop!
+  Bundler::Timing[dependency.spec.full_name].install_timer.stop!
 end
 
 Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_AFTER_INSTALL_ALL) do |dependencies|
@@ -117,13 +123,12 @@ end
 
 
 if defined?(Bundler::Plugin::Events::GEM_BEFORE_FETCH)
-  Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_BEFORE_FETCH) do |spec, source|
-    puts "Fetching #{spec.full_name} from #{source}"
-    Bundler::Timing.timings[spec.full_name].fetch_source = source
-    Bundler::Timing.timings[spec.full_name].start_fetch_timer!
+  Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_BEFORE_FETCH) do |maybe_spec, source|
+    Bundler::Timing[maybe_spec.full_name].start_fetch_timer!
+    Bundler::Timing[maybe_spec.full_name].fetch_source = source
   end
 
-  Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_AFTER_FETCH) do |spec, source|
-    Bundler::Timing.timings[spec.full_name].fetch_timer.stop!
+  Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_AFTER_FETCH) do |maybe_spec, source|
+    Bundler::Timing[maybe_spec.full_name].fetch_timer.stop!
   end
 end
