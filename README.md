@@ -28,17 +28,29 @@ Once installed, `bundler install` will display additional log lines. This is cur
 
 ### Example
 
-```
-➜  bundle install
-🕰️ Timing: 58 gems to install...
-Fetching gem metadata from https://rubygems.org/.........
-[...]
-🕰️ Timing: msgpack-1.7.2(NATIVE EXTENSIONS) took	2.49 seconds
-🕰️ Timing: bigdecimal-3.1.8(NATIVE EXTENSIONS) took	4.33 seconds
-🕰️ Timing: prism-1.2.0(NATIVE EXTENSIONS) took	5.9 seconds
-🕰️ Timing: zstd-ruby-1.5.6.6(NATIVE EXTENSIONS) took	9.05 seconds
-🕰️ Timing: digest-crc-0.6.5(NATIVE EXTENSIONS) took	11.49 seconds
-🕰️ Timing: gpgme-2.0.24(NATIVE EXTENSIONS) took	66.23 seconds
-Updating files in vendor/cache
-Bundle complete! 58 Gemfile dependencies, 204 gems now installed.
+```sh
+$ bundler --path=./somewhere42
+[DEPRECATED] The `--path` flag is deprecated because it relies on being remembered across bundler invocations, which bundler will no longer do in future versions. Instead please use `bundle config set path './somewhere42'`, and stop using this flag
+🕰️ Timing: 3 gems to install...
+Fetching gem metadata from https://rubygems.org/....
+Fetching https://github.com/Shopify/liquid
+Fetching mini_portile2 2.8.7
+Fetching bundler-timing 0.42.0
+Installing bundler-timing 0.42.0
+Installing mini_portile2 2.8.7
+Fetching gpgme 2.0.24
+Installing gpgme 2.0.24 with native extensions
+🕰️ Timing: Timing report:
+gem                   | ext?  | source                                                         | fetch (ms) | install (ms)
+----------------------|-------|----------------------------------------------------------------|------------|--------------
+liquid-b233b3d08106   | false | https://github.com/Shopify/liquid (at main@b233b3d)            |        915 |            0
+bundler-2.6.0.dev     | false | installed ✔️                                                    |          0 |            0
+liquid-5.6.0.alpha    | false | installed ✔️                                                    |          0 |           16
+bundler-timing-0.42.0 | false | rubygems repository https://rubygems.org/ or installed locally |       1684 |         1723
+mini_portile2-2.8.7   | false | rubygems repository https://rubygems.org/ or installed locally |       1657 |         1727
+gpgme-2.0.24          | true  | rubygems repository https://rubygems.org/ or installed locally |        515 |        69019
+----------------------|-------|----------------------------------------------------------------|------------|--------------
+🕰️ Timing: Installed 3 gems in 72062 ms.
+Bundle complete! 3 Gemfile dependencies, 5 gems now installed.
+Bundled gems are installed into `./somewhere42`
 ```
