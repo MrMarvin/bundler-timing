@@ -15,7 +15,7 @@ module Bundler
         longest_source = @timings.values.map(&:fetch_source).compact.map { |s| s.to_s.length }.max
 
         Bundler.ui.info "#{Bundler::Timing::L}: Timing report:"
-        Bundler.ui.info "#{'gem'.ljust(longest_gem_name)} | ext?  | #{'source'.ljust(longest_source)} | fetch (ms) | install (ms)"
+        Bundler.ui.info "#{'dependency'.ljust(longest_gem_name)} | ext?  | #{'source'.ljust(longest_source)} | fetch (ms) | install (ms)"
         Bundler.ui.info "#{'-'*longest_gem_name}-|-------|-#{'-' * longest_source}-|------------|--------------"
         Bundler::Timing.timings.to_a.sort_by { |name, gem| gem.installation_time }.each do |name, gem|
 
@@ -123,12 +123,25 @@ end
 
 
 if defined?(Bundler::Plugin::Events::GEM_BEFORE_FETCH)
-  Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_BEFORE_FETCH) do |maybe_spec, source|
-    Bundler::Timing[maybe_spec.full_name].start_fetch_timer!
-    Bundler::Timing[maybe_spec.full_name].fetch_source = source
+  Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_BEFORE_FETCH) do |spec, source|
+    Bundler::Timing[spec.full_name].start_fetch_timer!
+    Bundler::Timing[spec.full_name].fetch_source = source
   end
 
-  Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_AFTER_FETCH) do |maybe_spec, source|
-    Bundler::Timing[maybe_spec.full_name].fetch_timer.stop!
+  Bundler::Plugin.add_hook(Bundler::Plugin::Events::GEM_AFTER_FETCH) do |spec, source|
+    Bundler::Timing[spec.full_name].fetch_timer.stop!
+  end
+end
+
+if defined?(Bundler::Plugin::Events::GIT_BEFORE_FETCH)
+  Bundler::Plugin.add_hook(Bundler::Plugin::Events::GIT_BEFORE_FETCH) do |source|
+    full_name = source.app_cache_dirname
+    Bundler::Timing[full_name].start_fetch_timer!
+    Bundler::Timing[full_name].fetch_source = source
+  end
+
+  Bundler::Plugin.add_hook(Bundler::Plugin::Events::GIT_AFTER_FETCH) do |source|
+    full_name = source.app_cache_dirname
+    Bundler::Timing[full_name].fetch_timer.stop!
   end
 end
